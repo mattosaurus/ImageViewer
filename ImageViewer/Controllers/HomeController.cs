@@ -24,10 +24,18 @@ namespace ImageViewer.Controllers
 
         public IActionResult Index()
         {
-            List<FileInfo> images = Directory.EnumerateFiles(_env.WebRootPath + "\\images").Select(x => new FileInfo(x)).ToList();
+            List<FileInfo> images = Directory.EnumerateFiles(Path.Combine(_env.ContentRootPath, "StaticFiles", "images")).Select(x => new FileInfo(x)).ToList();
             images.Shuffle();
 
             return View(images);
+        }
+
+        [HttpGet]
+        public IActionResult Image(string imageName)
+        {
+            string file = Path.Combine(_env.ContentRootPath, "StaticFiles", "images", imageName);
+
+            return PhysicalFile(file, "image/jpeg");
         }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
