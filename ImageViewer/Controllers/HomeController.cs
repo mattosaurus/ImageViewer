@@ -5,33 +5,29 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using ImageViewer.Models;
+using Microsoft.AspNetCore.Hosting;
+using System.IO;
+using ImageViewer.Extensions;
 
 namespace ImageViewer.Controllers
 {
+    
+
     public class HomeController : Controller
     {
+        private readonly IHostingEnvironment _env;
+
+        public HomeController(IHostingEnvironment env)
+        {
+            _env = env;
+        }
+
         public IActionResult Index()
         {
-            return View();
-        }
+            List<FileInfo> images = Directory.EnumerateFiles(_env.WebRootPath + "\\images").Select(x => new FileInfo(x)).ToList();
+            images.Shuffle();
 
-        public IActionResult About()
-        {
-            ViewData["Message"] = "Your application description page.";
-
-            return View();
-        }
-
-        public IActionResult Contact()
-        {
-            ViewData["Message"] = "Your contact page.";
-
-            return View();
-        }
-
-        public IActionResult Privacy()
-        {
-            return View();
+            return View(images);
         }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
