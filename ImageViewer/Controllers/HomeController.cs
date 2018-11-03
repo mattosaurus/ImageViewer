@@ -8,11 +8,11 @@ using ImageViewer.Models;
 using Microsoft.AspNetCore.Hosting;
 using System.IO;
 using ImageViewer.Extensions;
+using Microsoft.AspNetCore.Authorization;
 
 namespace ImageViewer.Controllers
 {
-    
-
+    [Authorize]
     public class HomeController : Controller
     {
         private readonly IHostingEnvironment _env;
