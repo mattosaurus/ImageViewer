@@ -18,31 +18,48 @@ namespace ImageViewer.Controllers
     public class HomeController : Controller
     {
         private readonly IHostingEnvironment _env;
-        private readonly IConfigurationRoot _config;
+        private readonly IConfiguration _config;
 
-        public HomeController(IHostingEnvironment env, IConfigurationRoot config)
+        public HomeController(IHostingEnvironment env, IConfiguration config)
         {
             _env = env;
             _config = config;
         }
 
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
             // Retrieve a reference to a container.
-            CloudBlobContainer container = new CloudBlobContainer(new Uri(_config["Azure:ContainerConnectionString"]));
+            CloudBlobContainer container = new CloudBlobContainer(new Uri(_config["AzureStorage:ContainerConnectionString"]));
+            BlobContinuationToken blobContinuationToken = null;
 
-            List<FileInfo> images = Directory.EnumerateFiles(Path.Combine(_env.ContentRootPath, "StaticFiles", "images")).Select(x => new FileInfo(x)).ToList();
-            images.Shuffle();
+            List<string> blobNames = new List<string>();
 
-            return View(images);
+            do
+            {
+                BlobResultSegment results = await container.ListBlobsSegmentedAsync(null, blobContinuationToken);
+                // Get the value of the continuation token returned by the listing call.
+                blobContinuationToken = results.ContinuationToken;
+                // Cast results to CloudBlockBlob
+                blobNames.AddRange(results.Results.OfType<CloudBlockBlob>().Select(b => b.Name).ToList());
+            } while (blobContinuationToken != null); // Loop while the continuation token is not null.
+
+            blobNames.Shuffle();
+
+            return View(blobNames);
         }
 
         [HttpGet]
-        public IActionResult Image(string imageName)
+        public async Task<IActionResult> Image(string id)
         {
-            string file = Path.Combine(_env.ContentRootPath, "StaticFiles", "images", imageName);
+            // Retrieve a reference to a container.
+            CloudBlobContainer container = new CloudBlobContainer(new Uri(_config["AzureStorage:ContainerConnectionString"]));
+            CloudBlockBlob blob = container.GetBlockBlobReference(id);
 
-            return PhysicalFile(file, "image/jpeg");
+            MemoryStream memoryStream = new MemoryStream();
+            await blob.DownloadToStreamAsync(memoryStream);
+            memoryStream.Seek(0, SeekOrigin.Begin);
+
+            return new FileStreamResult(memoryStream, "image/jpeg");
         }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
