@@ -9,6 +9,8 @@ using Microsoft.AspNetCore.Hosting;
 using System.IO;
 using ImageViewer.Extensions;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.WindowsAzure.Storage.Blob;
+using Microsoft.Extensions.Configuration;
 
 namespace ImageViewer.Controllers
 {
@@ -16,14 +18,19 @@ namespace ImageViewer.Controllers
     public class HomeController : Controller
     {
         private readonly IHostingEnvironment _env;
+        private readonly IConfigurationRoot _config;
 
-        public HomeController(IHostingEnvironment env)
+        public HomeController(IHostingEnvironment env, IConfigurationRoot config)
         {
             _env = env;
+            _config = config;
         }
 
         public IActionResult Index()
         {
+            // Retrieve a reference to a container.
+            CloudBlobContainer container = new CloudBlobContainer(new Uri(_config["Azure:ContainerConnectionString"]));
+
             List<FileInfo> images = Directory.EnumerateFiles(Path.Combine(_env.ContentRootPath, "StaticFiles", "images")).Select(x => new FileInfo(x)).ToList();
             images.Shuffle();
 
